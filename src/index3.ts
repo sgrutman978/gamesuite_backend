@@ -269,3 +269,355 @@ app.post(
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
 });
+
+
+// using UnityEngine;
+// using UnityEngine.Networking;
+// using System.Collections;
+
+// public class SuiZkLoginMoveCall : MonoBehaviour
+// {
+//   private static string myServer = "http://localhost:3000";
+//   private string balanceUrl = myServer+"/balance/";
+//   private string moveCallUrl = myServer+"/moveCall";
+//   private string userAddress;
+//   private string jwtToken;
+//   private string apiKey = "your-api-key";
+//   private string zkLoginSignature; // Set after zkLogin (JSON string)
+
+//   public void StartZkLogin()
+//   {
+//     // Open OAuth login in a WebView (e.g., UniWebView)
+//     Application.OpenURL(myServer+"/auth/google");
+//     // After redirect, handle callback (simplified)
+//     StartCoroutine(CheckAuthCallback());
+//   }
+
+//   private IEnumerator CheckAuthCallback()
+//   {
+//     using (UnityWebRequest www = UnityWebRequest.Get(myServer+"/auth/callback"))
+//     {
+//       yield return www.SendWebRequest();
+//       Debug.Log(www.result);
+//       Debug.Log(UnityWebRequest.Result.Success);
+//       if (www.result == UnityWebRequest.Result.Success)
+//       {
+//         var response = JsonUtility.FromJson<AuthResponse>(www.downloadHandler.text);
+//         userAddress = response.address;
+//         jwtToken = response.token;
+//         // Assume zkLoginSignature is obtained via WebView or server
+//         zkLoginSignature = response.zkLoginSignature; // Update server to return this
+//         Debug.Log("Authenticated: " + userAddress);
+//       }
+//       else
+//       {
+//         Debug.LogError("Auth Error: " + www.error);
+//       }
+//     }
+//   }
+
+//   public void CheckBalanceAndMintNFT()
+//   {
+//     StartCoroutine(CheckBalance());
+//   }
+
+//   private IEnumerator CheckBalance()
+//   {
+//     using (UnityWebRequest www = UnityWebRequest.Get(balanceUrl + userAddress))
+//     {
+//       www.SetRequestHeader("Authorization", "Bearer " + jwtToken);
+//       www.SetRequestHeader("x-api-key", apiKey);
+//       yield return www.SendWebRequest();
+//       if (www.result == UnityWebRequest.Result.Success)
+//       {
+//         float balance = float.Parse(www.downloadHandler.text);
+//         if (balance >= 0.01f)
+//         {
+//           StartCoroutine(MintNFT());
+//         }
+//         else
+//         {
+//           Debug.Log("Please fund your address: " + userAddress);
+//         }
+//       }
+//       else
+//       {
+//         Debug.LogError("Balance Error: " + www.error);
+//       }
+//     }
+//   }
+
+//   private IEnumerator MintNFT()
+//   {
+//     string jsonPayload = JsonUtility.ToJson(new MoveCallData
+//     {
+//       zkLoginSignature = zkLoginSignature,
+//       address = userAddress,
+//       packageId = "0xYourContractAddress",
+//       module = "nft",
+//       func = "mint_nft",
+//       args = new string[] { "0x4e4654" }
+//     });
+
+//     using (UnityWebRequest www = UnityWebRequest.Post(moveCallUrl, jsonPayload, "application/json"))
+//     {
+//       www.SetRequestHeader("Authorization", "Bearer " + jwtToken);
+//       www.SetRequestHeader("x-api-key", apiKey);
+//       yield return www.SendWebRequest();
+//       if (www.result == UnityWebRequest.Result.Success)
+//       {
+//         Debug.Log("NFT Minted: " + www.downloadHandler.text);
+//       }
+//       else
+//       {
+//         Debug.LogError("Mint Error: " + www.error);
+//       }
+//     }
+//   }
+
+//   [System.Serializable]
+//   private struct MoveCallData
+//   {
+//     public string zkLoginSignature;
+//     public string address;
+//     public string packageId;
+//     public string module;
+//     public string func;
+//     public string[] args;
+//   }
+
+//   [System.Serializable]
+//   private struct AuthResponse
+//   {
+//     public string address;
+//     public string token;
+//     public string zkLoginSignature; // Add if server returns it
+//   }
+// }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+// using UnityEngine;
+// using UnityEngine.Networking;
+// using System.Collections;
+// using Newtonsoft.Json;
+
+// public class SuiZkLoginMoveCall : MonoBehaviour
+// {
+//     private static string myServer = "http://localhost:3000";
+//     private string balanceUrl = myServer + "/balance/";
+//     private string moveCallUrl = myServer + "/moveCall";
+//     private string userAddress;
+//     private string jwtToken;
+//     private string apiKey = "your-api-key"; // Replace with actual key or load from config
+//     private string sessionId;
+
+//     [System.Serializable]
+//     private struct AuthResponse
+//     {
+//         public string authUrl;
+//         public string sessionId;
+//         public string jwt;
+//         public string address;
+//         public string error;
+//     }
+
+//     [System.Serializable]
+//     private struct BalanceResponse
+//     {
+//         public float balance;
+//         public string error;
+//     }
+
+//     [System.Serializable]
+//     private struct MoveCallData
+//     {
+//         public string address;
+//         public string packageId;
+//         public string module;
+//         public string func;
+//         public string[] args;
+//     }
+
+//     [System.Serializable]
+//     private struct MoveCallResponse
+//     {
+//         public string result;
+//         public string error;
+//     }
+
+//     public void StartZkLogin()
+//     {
+//         StartCoroutine(StartAuth());
+//     }
+
+//     private IEnumerator StartAuth()
+//     {
+//         using (UnityWebRequest www = UnityWebRequest.Get(myServer + "/auth/google"))
+//         {
+//             yield return www.SendWebRequest();
+
+//             if (www.result == UnityWebRequest.Result.Success)
+//             {
+//                 var response = JsonConvert.DeserializeObject<AuthResponse>(www.downloadHandler.text);
+//                 sessionId = response.sessionId;
+//                 Debug.Log($"Starting auth with sessionId: {sessionId}");
+//                 Application.OpenURL(response.authUrl);
+//                 yield return new WaitForSeconds(5); // Wait for user to start login
+//                 StartCoroutine(PollForSession());
+//             }
+//             else
+//             {
+//                 Debug.LogError($"Auth start failed: {www.error}, Status: {www.responseCode}, Response: {www.downloadHandler.text}");
+//             }
+//         }
+//     }
+
+//     private IEnumerator PollForSession()
+//     {
+//         int attempts = 0;
+//         const int maxAttempts = 30; // 60 seconds
+
+//         while (string.IsNullOrEmpty(jwtToken) && attempts < maxAttempts)
+//         {
+//             attempts++;
+//             yield return new WaitForSeconds(2);
+//             using (UnityWebRequest www = UnityWebRequest.Get(myServer + "/auth/session/" + sessionId))
+//             {
+//                 yield return www.SendWebRequest();
+
+//                 Debug.Log($"Poll result: {www.result}, Error: {www.error}, Status: {www.responseCode}, Response: {www.downloadHandler.text}");
+
+//                 if (www.result == UnityWebRequest.Result.Success)
+//                 {
+//                     var response = JsonConvert.DeserializeObject<AuthResponse>(www.downloadHandler.text);
+//                     if (string.IsNullOrEmpty(response.error))
+//                     {
+//                         jwtToken = response.jwt;
+//                         userAddress = response.address;
+//                         Debug.Log($"Authenticated: {userAddress}");
+//                         yield break;
+//                     }
+//                     else
+//                     {
+//                         Debug.Log($"Session error: {response.error}");
+//                     }
+//                 }
+//                 else
+//                 {
+//                     Debug.LogError($"Poll failed: {www.error}, Status: {www.responseCode}, Response: {www.downloadHandler.text}");
+//                 }
+//             }
+//         }
+
+//         if (string.IsNullOrEmpty(jwtToken))
+//         {
+//             Debug.LogError("Authentication timed out");
+//         }
+//     }
+
+//     public void CheckBalanceAndMintNFT()
+//     {
+//         if (string.IsNullOrEmpty(userAddress))
+//         {
+//             Debug.LogError("User not authenticated");
+//             return;
+//         }
+//         StartCoroutine(CheckBalance());
+//     }
+
+//     private IEnumerator CheckBalance()
+//     {
+//         using (UnityWebRequest www = UnityWebRequest.Get(balanceUrl + userAddress))
+//         {
+//             www.SetRequestHeader("Authorization", "Bearer " + jwtToken);
+//             www.SetRequestHeader("x-api-key", apiKey);
+//             yield return www.SendWebRequest();
+
+//             if (www.result == UnityWebRequest.Result.Success)
+//             {
+//                 var response = JsonConvert.DeserializeObject<BalanceResponse>(www.downloadHandler.text);
+//                 if (string.IsNullOrEmpty(response.error))
+//                 {
+//                     float balance = response.balance;
+//                     Debug.Log($"Balance: {balance} SUI");
+//                     if (balance >= 0.01f)
+//                     {
+//                         StartCoroutine(MintNFT());
+//                     }
+//                     else
+//                     {
+//                         Debug.Log($"Insufficient balance: {userAddress} has {balance} SUI");
+//                     }
+//                 }
+//                 else
+//                 {
+//                     Debug.LogError($"Balance error: {response.error}");
+//                 }
+//             }
+//             else
+//             {
+//                 Debug.LogError($"Balance failed: {www.error}, Status: {www.responseCode}, Response: {www.downloadHandler.text}");
+//             }
+//         }
+//     }
+
+//     private IEnumerator MintNFT()
+//     {
+//         var payload = new MoveCallData
+//         {
+//             address = userAddress,
+//             packageId = "0xYourContractAddress", // Replace with actual contract address
+//             module = "nft",
+//             func = "mint_nft",
+//             args = new string[] { "Sword" } // Adjust based on Move function
+//         };
+
+//         string jsonPayload = JsonConvert.SerializeObject(payload);
+//         using (UnityWebRequest www = UnityWebRequest.Post(moveCallUrl, jsonPayload, "application/json"))
+//         {
+//             www.SetRequestHeader("Authorization", "Bearer " + jwtToken);
+//             www.SetRequestHeader("x-api-key", apiKey);
+//             yield return www.SendWebRequest();
+
+//             if (www.result == UnityWebRequest.Result.Success)
+//             {
+//                 var response = JsonConvert.DeserializeObject<MoveCallResponse>(www.downloadHandler.text);
+//                 if (string.IsNullOrEmpty(response.error))
+//                 {
+//                     Debug.Log($"NFT Minted: {response.result}");
+//                 }
+//                 else
+//                 {
+//                     Debug.LogError($"Mint error: {response.error}");
+//                 }
+//             }
+//             else
+//             {
+//                 Debug.LogError($"Mint failed: {www.error}, Status: {www.responseCode}, Response: {www.downloadHandler.text}");
+//             }
+//         }
+//     }
+// }
